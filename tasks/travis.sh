@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 if [[ $TESTENV ]]; then
   tox -e $TESTENV
 else
