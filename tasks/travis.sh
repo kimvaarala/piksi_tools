@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-which python
 if [[ $TESTENV ]]; then
   tox -e $TESTENV
 else

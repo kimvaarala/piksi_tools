@@ -108,8 +108,8 @@ function homebrew_install () {
     #    source ./setup.sh
     #    homebrew_install
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    #brew doctor
-    #brew update
+    brew doctor
+    brew update
     # Homebrew apparently requires the contents of /usr/local to be
     # chown'd to your username.  See:
     # http://superuser.com/questions/254843/cant-install-brew-formulae-correctly-permission-denied-in-usr-local-lib
