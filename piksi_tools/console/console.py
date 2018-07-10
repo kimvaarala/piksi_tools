@@ -21,13 +21,10 @@ import time
 # Shut chaco up for now
 import warnings
 
-import PyQt4
-
 import sbp.client as sbpc
 from enable.savage.trait_defs.ui.svg_button import SVGButton
-import PyQt4
+
 from PyQt4 import QtCore
-QtCore.QCoreApplication.addLibraryPath(os.path.join(os.path.dirname(QtCore.__file__), "plugins"))
 from pyface.image_resource import ImageResource
 from sbp.client.drivers.network_drivers import TCPDriver
 from sbp.ext_events import SBP_MSG_EXT_EVENT, MsgExtEvent
@@ -64,6 +61,8 @@ from piksi_tools.console.utils import (EMPTY_STR, call_repeatedly,
                                        get_mode, mode_dict, resource_filename,
                                        icon, swift_path)
 from piksi_tools.console.skylark_view import SkylarkView
+
+QtCore.QCoreApplication.addLibraryPath(os.path.join(os.path.dirname(QtCore.__file__), "plugins"))
 
 
 class ArgumentParserError(Exception):
