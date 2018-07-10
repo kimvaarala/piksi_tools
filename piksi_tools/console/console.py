@@ -22,9 +22,11 @@ import time
 import warnings
 
 import sbp.client as sbpc
+from PyQt4 import QtCore
+from traits.etsconfig.api import ETSConfig
+
 from enable.savage.trait_defs.ui.svg_button import SVGButton
 
-from PyQt4 import QtCore
 from pyface.image_resource import ImageResource
 from sbp.client.drivers.network_drivers import TCPDriver
 from sbp.ext_events import SBP_MSG_EXT_EVENT, MsgExtEvent
@@ -35,7 +37,6 @@ from sbp.system import SBP_MSG_HEARTBEAT
 from traits.api import (Bool, Dict, Directory, Enum, HasTraits, Instance, Int,
                         List, Str)
 # Toolkit
-from traits.etsconfig.api import ETSConfig
 from traitsui.api import (EnumEditor, Handler, HGroup, HTMLEditor, ImageEditor,
                           InstanceEditor, Item, Label, Spring,
                           Tabbed, UItem, VGroup, View, VSplit)
