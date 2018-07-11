@@ -76,10 +76,10 @@ function all_dependencies_debian () {
          python-qt4-gl \
          python-software-properties \
          libgtk2.0-0
-    pip install --upgrade pip
-    pip install -r ../requirements.txt
-    pip install -r ../requirements_gui.txt
-    pip install PyInstaller
+    sudo pip install --upgrade pip
+    sudo pip install -r ../requirements.txt
+    sudo pip install -r ../requirements_gui.txt
+    sudo pip install PyInstaller
 }
 
 
