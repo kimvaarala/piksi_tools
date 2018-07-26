@@ -931,6 +931,12 @@ def main():
         cnx_info['mode'] = 'file'
         selected_driver = s.get_driver(args.ftdi, port, baud, args.file)
         connection_description = os.path.split(port)[-1]
+    elif port and args.json_file:
+        # Use file and interpret port arg as the file
+        print("Using file '%s'" % port)
+        cnx_info['mode'] = 'file'
+        selected_driver = s.get_driver(args.ftdi, port, baud, False, args.json_file)
+        connection_description = os.path.split(port)[-1]
     elif not port:
         # Use the gui to get our driver
         port_chooser = PortChooser(baudrate=int(args.baud))
@@ -971,29 +977,32 @@ def main():
         cnx_info['mode'] = 'serial'
 
     with selected_driver as driver:
-        with sbpc.Handler(
-                sbpc.Framer(driver.read, driver.write, args.verbose)) as link:
-            if args.reset:
-                link(MsgReset(flags=0))
-            log_filter = DEFAULT_LOG_LEVEL_FILTER
-            if args.initloglevel[0]:
-                log_filter = args.initloglevel[0]
-            with SwiftConsole(
-                    link,
-                    args.update,
-                    log_filter,
-                    cnx_desc=connection_description,
-                    error=args.error,
-                    json_logging=args.log,
-                    log_dirname=args.log_dirname,
-                    override_filename=args.logfilename,
-                    log_console=args.log_console,
-                    networking=args.networking,
-                    connection_info=cnx_info,
-                    expand_json=args.expand_json) as console:
+        if not args.json_file:
+            link = sbpc.Handler(sbpc.Framer(driver.read, driver.write, args.verbose))
+        else:
+            link = sbpc.Handler(driver.next())
+        link.__enter__()
+        if args.reset:
+            link(MsgReset(flags=0))
+        log_filter = DEFAULT_LOG_LEVEL_FILTER
+        if args.initloglevel[0]:
+            log_filter = args.initloglevel[0]
+        with SwiftConsole(
+                link,
+                args.update,
+                log_filter,
+                cnx_desc=connection_description,
+                error=args.error,
+                json_logging=args.log,
+                log_dirname=args.log_dirname,
+                override_filename=args.logfilename,
+                log_console=args.log_console,
+                networking=args.networking,
+                connection_info=cnx_info,
+                expand_json=args.expand_json) as console:
 
-                console.configure_traits()
-
+            console.configure_traits()
+    link.__exit__()
     # Force exit, even if threads haven't joined
     try:
         os._exit(0)

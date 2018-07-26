@@ -26,7 +26,7 @@ from sbp.client.drivers.network_drivers import HTTPDriver, TCPDriver
 from sbp.client.drivers.pyftdi_driver import PyFTDIDriver
 from sbp.client.drivers.pyserial_driver import PySerialDriver
 from sbp.client.drivers.file_driver import FileDriver
-from sbp.client.loggers.json_logger import JSONLogger, JSONBinLogger
+from sbp.client.loggers.json_logger import JSONLogger, JSONBinLogger, JSONLogIterator
 from sbp.client.loggers.null_logger import NullLogger
 from sbp.logging import SBP_MSG_LOG, SBP_MSG_PRINT_DEP, MsgLog
 from sbp.piksi import MsgReset
@@ -127,6 +127,12 @@ def base_cl_options(override_arg_parse=None, add_help=True):
         default=False,
         help="Expand fields in JSON logs"
     )
+    parser.add_argument(
+        '--json-file',
+        action="store_true",
+        default=False,
+        help="port arguement will be path to a JSON logfile (either expanded or unexpanded)"
+    )
     return parser
 
 
@@ -156,6 +162,7 @@ def get_driver(use_ftdi=False,
                port=SERIAL_PORT,
                baud=SERIAL_BAUD,
                file=False,
+               json_file=False,
                rtscts=False):
     """
     Get a driver based on configuration options
@@ -174,6 +181,8 @@ def get_driver(use_ftdi=False,
             return PyFTDIDriver(baud)
         if file:
             return FileDriver(open(port, 'rb'))
+        if json_file:
+            return JSONLogIterator(open(port, 'r'))
     # HACK - if we are on OSX and the device appears to be a CDC device, open as a binary file
         for each in serial.tools.list_ports.comports():
             if port == each[0] and sys.platform == "darwin":
@@ -359,7 +368,7 @@ def get_base_args_driver(args):
             raise Exception('Invalid host and/or port: {0}'.format(traceback.format_exc()))
     else:
         driver = get_driver(
-            args.ftdi, args.port, args.baud, args.file, rtscts=args.rtscts)
+            args.ftdi, args.port, args.baud, args.file, args.json_file,  rtscts=args.rtscts)
     return driver
 
 
@@ -383,25 +392,29 @@ def main(args):
     use_broker = args.broker
     # Driver with context
     driver = get_base_args_driver(args)
-    with Handler(Framer(driver.read, driver.write, args.verbose)) as link:
-        # Logger with context
-        with get_logger(args.log, log_filename, args.expand_json) as logger:
-            with get_append_logger(append_log_filename, tags) as append_logger:
-                link.add_callback(printer, SBP_MSG_PRINT_DEP)
-                link.add_callback(log_printer, SBP_MSG_LOG)
-                Forwarder(link, logger).start()
-                Forwarder(link, append_logger).start()
-                if use_broker and base and serial_id:
-                    device_id = get_uuid(channel, serial_id)
-                    with HTTPDriver(str(device_id), base) as http:
-                        with Handler(
-                                Framer(http.read, http.write,
-                                       args.verbose)) as slink:
-                            Forwarder(slink, swriter(link)).start()
-                            run(args, link)
-                else:
-                    run(args, link)
-
+    if not args.json_file:
+        link = Handler(Framer(driver.read, driver.write, args.verbose))
+    else:
+        link = Handler(driver.next())
+    link.__enter__()
+    # Logger with context
+    with get_logger(args.log, log_filename, args.expand_json) as logger:
+        with get_append_logger(append_log_filename, tags) as append_logger:
+            link.add_callback(printer, SBP_MSG_PRINT_DEP)
+            link.add_callback(log_printer, SBP_MSG_LOG)
+            Forwarder(link, logger).start()
+            Forwarder(link, append_logger).start()
+            if use_broker and base and serial_id:
+                device_id = get_uuid(channel, serial_id)
+                with HTTPDriver(str(device_id), base) as http:
+                    with Handler(
+                            Framer(http.read, http.write,
+                                   args.verbose)) as slink:
+                        Forwarder(slink, swriter(link)).start()
+                        run(args, link)
+            else:
+                run(args, link)
+    link.__exit__()
 
 if __name__ == "__main__":
     main(get_args())
